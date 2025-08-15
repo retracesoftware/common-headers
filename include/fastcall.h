@@ -38,19 +38,21 @@ namespace retracesoftware {
             return nb::steal(result);
         }
 
-        inline nb::object operator()(nb::handle arg) {
-            PyObject * args[] = {nullptr, arg.ptr()};
-
-            PyObject * result = cached_vectorcall(callable, args + 1, 1 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr);
+        inline PyObject * operator()(PyObject * arg) {
+            PyObject * result = cached_vectorcall(callable, &arg, 1, nullptr);
 
             if (!result) on_error();
-            return nb::steal(result);
+            return result;
+        }
+
+        inline nb::object operator()(nb::handle arg) {
+            return nb::steal(operator()(arg.ptr()));
         }
 
         inline nb::object operator()(nb::handle arg1, nb::handle arg2) {
-            PyObject * args[] = {nullptr, arg1.ptr(), arg2.ptr()};
+            PyObject * args[] = {arg1.ptr(), arg2.ptr()};
 
-            PyObject * result = cached_vectorcall(callable, args + 1, 2 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr);
+            PyObject * result = cached_vectorcall(callable, args, 2, nullptr);
 
             if (!result) on_error();
             return nb::steal(result);
@@ -68,8 +70,8 @@ namespace retracesoftware {
             return nb::steal(result);
         }
     
-        inline nb::object operator()(nb::handle prepend, nb::args args, nb::kwargs kwargs) {
-            ...
-        }
+        // inline nb::object operator()(nb::handle prepend, nb::args args, nb::kwargs kwargs) {
+        //     ...
+        // }
     };
 }

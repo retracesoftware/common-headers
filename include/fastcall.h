@@ -5,6 +5,20 @@
 namespace nb = nanobind;
 
 namespace retracesoftware {
+
+    static inline vectorcallfunc extract_vectorcall(PyObject *callable)
+    {
+        PyTypeObject *tp = Py_TYPE(callable);
+        if (!PyType_HasFeature(tp, Py_TPFLAGS_HAVE_VECTORCALL)) {
+            return nullptr;
+        }
+        Py_ssize_t offset = tp->tp_vectorcall_offset;
+
+        vectorcallfunc ptr;
+        memcpy(&ptr, (char *) callable + offset, sizeof(ptr));
+        return ptr;
+    }
+
     struct FastCall {
         PyObject * callable;
         vectorcallfunc cached_vectorcall;
@@ -19,7 +33,7 @@ namespace retracesoftware {
             this->callable = callable_in.inc_ref().ptr();
 
             // Perform the vectorcall lookup and set the fallback if needed.
-            cached_vectorcall = _PyVectorcall_FunctionInline(this->callable);
+            cached_vectorcall = extract_vectorcall(this->callable);
             if (!cached_vectorcall) {
                 cached_vectorcall = PyObject_Vectorcall;
             }

@@ -78,11 +78,11 @@ namespace retracesoftware {
             return nb::steal(result);
         }
 
-        inline nb::object operator()(nb::args args, nb::kwargs kwargs) {
-            PyObject * result = cached_vectorcall(callable, (PyObject *const *)args, args.size(), kwargs.names().ptr());
-            if (!result) on_error();
-            return nb::steal(result);
-        }
+        // inline nb::object operator()(nb::args args, nb::kwargs kwargs) {
+        //     PyObject * result = cached_vectorcall(callable, args.data(), args.size(), kwargs.names().ptr());
+        //     if (!result) on_error();
+        //     return nb::steal(result);
+        // }
     
         // inline nb::object operator()(nb::handle prepend, nb::args args, nb::kwargs kwargs) {
         //     ...

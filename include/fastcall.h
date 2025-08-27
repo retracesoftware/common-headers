@@ -55,7 +55,7 @@ namespace retracesoftware {
             return throw_on_nullptr(vectorcall(callable, args + 1, 3 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr));
         }
 
-        inline nb::object operator()(PyObject *const *args, size_t nargsf, PyObject *kwnames) {
+        inline PyObject * operator()(PyObject *const *args, size_t nargsf, PyObject *kwnames) {
             return throw_on_nullptr(vectorcall(callable, args, nargsf, kwnames));
         }
 

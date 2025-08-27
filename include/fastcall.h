@@ -1,8 +1,5 @@
 #pragma once
 #include <Python.h>
-#include <nanobind/nanobind.h>
-
-namespace nb = nanobind;
 
 namespace retracesoftware {
 
@@ -10,7 +7,7 @@ namespace retracesoftware {
     {
         PyTypeObject *tp = Py_TYPE(callable);
         if (!PyType_HasFeature(tp, Py_TPFLAGS_HAVE_VECTORCALL)) {
-            return nullptr;
+            return PyObject_Vectorcall;
         }
         Py_ssize_t offset = tp->tp_vectorcall_offset;
 
@@ -20,62 +17,46 @@ namespace retracesoftware {
     }
 
     struct FastCall {
+        vectorcallfunc vectorcall;
         PyObject * callable;
-        vectorcallfunc cached_vectorcall;
     
-        FastCall(nb::handle callable_in) {
-            // Eagerly check if the object is callable and raise an exception if not.
-            if (!PyCallable_Check(callable_in.ptr())) {
-                throw nb::type_error("Expected a callable object.");
+        FastCall(PyObject * callable) : vectorcall(extract_vectorcall), callable(callable) {
+            assert(PyCallable_Check(callable));
+        }
+
+        FastCall() : vectorcall(nullptr), callable(nullptr) {}
+        // ~FastCall() { Py_DECREF(callable); }
+
+        inline PyObject * throw_on_nullptr(PyObject * result) {
+            if (!result) {
+                assert(PyErr_Occurred());   
+                throw nullptr;
             }
-
-            // Increment the ref count to own the object's lifetime.
-            this->callable = callable_in.inc_ref().ptr();
-
-            // Perform the vectorcall lookup and set the fallback if needed.
-            cached_vectorcall = extract_vectorcall(this->callable);
-            if (!cached_vectorcall) {
-                cached_vectorcall = PyObject_Vectorcall;
-            }
-        }
-
-        ~FastCall() { Py_DECREF(callable); }
-
-        void on_error() {
-            throw nb::python_error();
-        }
-
-        inline nb::object operator()() {
-            PyObject * result = cached_vectorcall(callable, nullptr, 0, nullptr);
-
-            if (!result) on_error();
-            return nb::steal(result);
-        }
-
-        inline PyObject * operator()(PyObject * arg) {
-            PyObject * result = cached_vectorcall(callable, &arg, 1, nullptr);
-
-            if (!result) on_error();
             return result;
         }
 
-        inline nb::object operator()(nb::handle arg) {
-            return nb::steal(operator()(arg.ptr()));
+        inline PyObject * operator()() {
+            return throw_on_nullptr(vectorcall(callable, nullptr, 0, nullptr));
         }
 
-        inline nb::object operator()(nb::handle arg1, nb::handle arg2) {
-            PyObject * args[] = {arg1.ptr(), arg2.ptr()};
+        inline PyObject * operator()(PyObject * arg) {
+            return throw_on_nullptr(vectorcall(callable, &arg, 1, nullptr));
+        }
 
-            PyObject * result = cached_vectorcall(callable, args, 2, nullptr);
+        inline PyObject * operator()(PyObject * arg1, PyObject * arg2) {
+            PyObject * args[] = {nullptr, arg1, arg2};
 
-            if (!result) on_error();
-            return nb::steal(result);
+            return throw_on_nullptr(vectorcall(callable, args + 1, 2 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr));
+        }
+
+        inline PyObject * operator()(PyObject * arg1, PyObject * arg2, PyObject * arg3) {
+            PyObject * args[] = {nullptr, arg1, arg2, arg3};
+
+            return throw_on_nullptr(vectorcall(callable, args + 1, 3 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr));
         }
 
         inline nb::object operator()(PyObject *const *args, size_t nargsf, PyObject *kwnames) {
-            PyObject * result = cached_vectorcall(callable, args, nargsf, kwnames);
-            if (!result) on_error();
-            return nb::steal(result);
+            return throw_on_nullptr(vectorcall(callable, args, nargsf, kwnames));
         }
 
         // inline nb::object operator()(nb::args args, nb::kwargs kwargs) {

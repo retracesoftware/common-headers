@@ -3,17 +3,22 @@
 
 namespace retracesoftware {
 
+    static inline PyObject * fallback(PyObject *callable, PyObject *const *args, size_t nargsf, PyObject *kwnames) {
+        Py_ssize_t nargs = PyVectorcall_NARGS(nargsf);
+        return _PyObject_MakeTpCall(PyThreadState_Get(), callable, args, nargs, kwnames);
+    }
+
     static inline vectorcallfunc extract_vectorcall(PyObject *callable)
     {
         PyTypeObject *tp = Py_TYPE(callable);
         if (!PyType_HasFeature(tp, Py_TPFLAGS_HAVE_VECTORCALL)) {
-            return PyObject_Vectorcall;
+            return fallback;
         }
         Py_ssize_t offset = tp->tp_vectorcall_offset;
 
         vectorcallfunc ptr;
         memcpy(&ptr, (char *) callable + offset, sizeof(ptr));
-        return ptr;
+        return ptr ? ptr : fallback;
     }
 
     struct FastCall {

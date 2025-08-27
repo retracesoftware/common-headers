@@ -27,36 +27,36 @@ namespace retracesoftware {
         FastCall() : vectorcall(nullptr), callable(nullptr) {}
         // ~FastCall() { Py_DECREF(callable); }
 
-        inline PyObject * throw_on_nullptr(PyObject * result) {
-            if (!result) {
-                assert(PyErr_Occurred());   
-                throw nullptr;
-            }
+        inline PyObject * handle_result(PyObject * result) {
+            // if (!result) {
+            //     assert(PyErr_Occurred());   
+            //     throw nullptr;
+            // }
             return result;
         }
 
         inline PyObject * operator()() {
-            return throw_on_nullptr(vectorcall(callable, nullptr, 0, nullptr));
+            return handle_result(vectorcall(callable, nullptr, 0, nullptr));
         }
 
         inline PyObject * operator()(PyObject * arg) {
-            return throw_on_nullptr(vectorcall(callable, &arg, 1, nullptr));
+            return handle_result(vectorcall(callable, &arg, 1, nullptr));
         }
 
         inline PyObject * operator()(PyObject * arg1, PyObject * arg2) {
             PyObject * args[] = {nullptr, arg1, arg2};
 
-            return throw_on_nullptr(vectorcall(callable, args + 1, 2 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr));
+            return handle_result(vectorcall(callable, args + 1, 2 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr));
         }
 
         inline PyObject * operator()(PyObject * arg1, PyObject * arg2, PyObject * arg3) {
             PyObject * args[] = {nullptr, arg1, arg2, arg3};
 
-            return throw_on_nullptr(vectorcall(callable, args + 1, 3 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr));
+            return handle_result(vectorcall(callable, args + 1, 3 | PY_VECTORCALL_ARGUMENTS_OFFSET, nullptr));
         }
 
         inline PyObject * operator()(PyObject *const *args, size_t nargsf, PyObject *kwnames) {
-            return throw_on_nullptr(vectorcall(callable, args, nargsf, kwnames));
+            return handle_result(vectorcall(callable, args, nargsf, kwnames));
         }
 
         // inline nb::object operator()(nb::args args, nb::kwargs kwargs) {

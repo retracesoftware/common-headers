@@ -20,7 +20,7 @@ namespace retracesoftware {
         vectorcallfunc vectorcall;
         PyObject * callable;
     
-        FastCall(PyObject * callable) : vectorcall(extract_vectorcall), callable(callable) {
+        FastCall(PyObject * callable) : vectorcall(extract_vectorcall(callable)), callable(callable) {
             assert(PyCallable_Check(callable));
         }
 

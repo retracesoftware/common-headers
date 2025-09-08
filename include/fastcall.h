@@ -33,10 +33,7 @@ namespace retracesoftware {
         // ~FastCall() { Py_DECREF(callable); }
 
         inline PyObject * handle_result(PyObject * result) {
-            // if (!result) {
-            //     assert(PyErr_Occurred());   
-            //     throw nullptr;
-            // }
+            assert((!result && PyErr_Occurred()) || (result && !PyErr_Occurred()));
             return result;
         }
 

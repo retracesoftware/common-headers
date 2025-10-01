@@ -3,6 +3,31 @@
 
 namespace retracesoftware {
 
+    class GILReleaseGuard {
+    private:
+        // Stores the thread state pointer when the GIL is released.
+        PyThreadState* saved_state_;
+
+    public:
+        // Constructor: Saves the thread state and releases the GIL.
+        inline GILReleaseGuard() {
+            // PyEval_SaveThread() releases the GIL and returns the current thread state.
+            saved_state_ = PyEval_SaveThread();
+        }
+
+        // Destructor: Reacquires the GIL and restores the thread state.
+        inline ~GILReleaseGuard() {
+            // PyEval_RestoreThread() reacquires the GIL using the saved state.
+            PyEval_RestoreThread(saved_state_);
+        }
+
+        // Deleted Copy/Move Constructors and Assignment Operators
+        GILReleaseGuard(const GILReleaseGuard&) = delete;
+        GILReleaseGuard& operator=(const GILReleaseGuard&) = delete;
+        GILReleaseGuard(GILReleaseGuard&&) = delete;
+        GILReleaseGuard& operator=(GILReleaseGuard&&) = delete;
+    };
+
     class GILGuard {
     private:
         // Stores the state returned by PyGILState_Ensure()
